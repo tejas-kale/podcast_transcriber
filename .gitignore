@@ -17,4 +17,4 @@ venv
 # Specific files
 last_sync_time.txt
 **/models
-
+**/whisper.cpp
