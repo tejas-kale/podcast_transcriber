@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Transcriber</title>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --background-color: #F2F2F7;
+            --text-color: #1C1C1E;
+            --secondary-text-color: #8E8E93;
+            --border-color: #C6C6C8;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+            font-family: 'Pacifico', cursive;
+        }
+
+        .search-container {
+            padding: 20px;
+        }
+
+        #search-input {
+            width: 50%;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            background-color: rgba(142, 142, 147, 0.12);
+            transition: background-color 0.3s ease;
+            margin: 0 auto;
+        }
+
+        #search-input:focus {
+            background-color: white;
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        .content {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-right: 20px;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .queue-pane {
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-left: 20px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 100px); /* Adjust based on your header height */
+        }
+
+        #queue-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .transcribe-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .transcribe-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .transcribe-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .library-item, .episode-item, .queue-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .library-item img, .episode-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+
+        .library-item-content, .episode-info {
+            flex-grow: 1;
+        }
+
+        .episode-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .episode-meta {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+        }
+
+        .add-to-queue-btn, .transcribe-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-to-queue-btn:hover, .transcribe-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .remove-from-queue-btn {
+            background-color: #FF3B30;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--secondary-text-color);
+            transition: color 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .pagination a, .pagination span {
+            margin: 0 10px;
+            padding: 5px 10px;
+            text-decoration: none;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+        }
+
+        .pagination a:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .pagination .current-page {
+            font-weight: bold;
+        }
+
+        #export-transcripts-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #export-transcripts-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .dropdown-content {
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            padding: 12px 16px;
+            z-index: 1;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .dropdown-content div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .dropdown-content .add-to-library-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            position: relative;
+        }
+
+        .dropdown-content .add-to-library-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .dropdown-content .add-to-library-btn:hover::after {
+            content: "Add to Library";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a {
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .dropdown-content a img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .dropdown-content a span {
+            flex-grow: 1;
+        }
+
+        .episode-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .episode-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .episode-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+
+        .episode-info {
+            flex-grow: 1;
+        }
+
+        .episode-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .episode-meta {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+        }
+
+        .add-to-queue-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-to-queue-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="app-title">Podcast Transcriber</h1>
+        <button id="export-transcripts-btn">Export Transcripts</button>
+    </div>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search for podcasts" value="{{ search_result }}">
+            <div id="search-results" class="dropdown-content"></div>
+            <div id="search-error" style="color: red; display: none;"></div>
+        </div>
+        <div class="content">
+            <div class="sidebar">
+                <h2>Library</h2>
+                <div id="library-list">
+                    {% for item in library_items %}
+                    <div class="library-item" data-podcast-id="{{ item.collection_id }}">
+                        <img src="{{ item.artwork_url }}" alt="{{ item.name }}">
+                        <div class="library-item-content">
+                            <div>{{ item.name }}</div>
+                            <div class="episode-meta">{{ item.artist }}</div>
+                        </div>
+                        <form method="post" action="{% url 'remove_from_library' item_id=item.collection_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="remove-from-library" title="Remove from library">&times;</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="main-content">
+                <div class="tabs">
+                    <button class="tab active" data-tab="latest">Latest</button>
+                    <button class="tab" data-tab="podcast" style="display: none;">Podcast</button>
+                </div>
+                <div id="latest-tab" class="tab-content active">
+                    <div class="episode-list">
+                        {% for episode in latest_episodes %}
+                        <div class="episode-item" data-episode-id="{{ episode.trackId }}">
+                            <img src="{{ episode.artworkUrl60 }}" alt="{{ episode.collectionName }}">
+                            <div class="episode-info">
+                                <div class="episode-title">{{ episode.trackName }}</div>
+                                <div class="episode-meta">
+                                    {{ episode.collectionName }} | {{ episode.releaseDate|date:"F d, Y" }} | {{ episode.duration_minutes }} min
+                                </div>
+                            </div>
+                            <button class="add-to-queue-btn" onclick="addToQueue('{{ episode.trackId }}', '{{ episode.trackName|escapejs }}', '{{ episode.previewUrl|escapejs }}', '{{ episode.collectionName|escapejs }}', '{{ episode.releaseDate|escapejs }}')">Add</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="pagination">
+                        {% if latest_episodes.has_previous %}
+                            <a href="?latest_page={{ latest_episodes.previous_page_number }}">Previous</a>
+                        {% else %}
+                            <span class="disabled">Previous</span>
+                        {% endif %}
+                        <span class="current-page">Page {{ latest_episodes.number }} of {{ latest_episodes.paginator.num_pages }}</span>
+                        {% if latest_episodes.has_next %}
+                            <a href="?latest_page={{ latest_episodes.next_page_number }}">Next</a>
+                        {% else %}
+                            <span class="disabled">Next</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div id="podcast-tab" class="tab-content">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+            <div class="queue-pane">
+                <h2>Transcription Queue</h2>
+                <div id="queue-list"></div>
+                <button id="transcribe-all-btn" class="transcribe-btn">
+                    <div class="spinner" style="display: none;"></div>
+                    <span>Transcribe</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Initialize the queue from the server-side data
+        let queue = JSON.parse(JSON.stringify({{ transcription_queue|safe }})).map(item => ({
+            ...item,
+            episode_title: item.episode_title.replace(/'/g, "\\'")
+        }));
+
+        function updateQueueDisplay() {
+            const queueList = document.getElementById('queue-list');
+            queueList.innerHTML = '';
+            queue.forEach(item => {
+                const queueItem = document.createElement('div');
+                queueItem.className = `queue-item ${item.status === 'in-progress' ? 'in-progress' : ''}`;
+                queueItem.innerHTML = `
+                    <span class="transcription-status status-${item.status}"></span>
+                    <span>${item.podcast_name} - ${item.episode_title}</span>
+                    <button class="remove-from-queue-btn" onclick="removeFromQueue('${item.episode_id}')" ${item.status === 'in-progress' ? 'disabled' : ''}>×</button>
+                `;
+                queueList.appendChild(queueItem);
+            });
+
+            // Enable or disable the Transcribe button based on queue status
+            const transcribeBtn = document.getElementById('transcribe-all-btn');
+            transcribeBtn.disabled = queue.length === 0 || queue.every(item => item.status === 'success');
+        }
+
+        async function addToQueue(episodeId, episodeTitle, audioUrl, podcastName, publicationDate) {
+            episodeTitle = episodeTitle.replace(/'/g, "\\'");
+            podcastName = podcastName.replace(/'/g, "\\'");
+
+            if (!queue.some(item => item.episode_id === episodeId)) {
+                const newItem = {
+                    episode_id: episodeId,
+                    episode_title: episodeTitle,
+                    audio_url: audioUrl,  // Don't encode the URL here
+                    podcast_name: podcastName,
+                    publication_date: publicationDate,
+                    status: 'pending'
+                };
+
+                try {
+                    const response = await fetch('{% url "add_to_queue" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: new URLSearchParams(newItem)
+                    });
+
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        queue.push(newItem);
+                        updateQueueDisplay();
+                        console.log('Item added to queue successfully');
+                    } else {
+                        console.error('Failed to add item to queue on server');
+                    }
+                } catch (error) {
+                    console.error('Error adding item to queue:', error);
+                }
+            } else {
+                console.log('Item already in queue');
+            }
+        }
+
+        function removeFromQueue(episodeId) {
+            queue = queue.filter(item => item.episode_id !== episodeId);
+            updateQueueDisplay();
+            
+            fetch('{% url "remove_from_queue" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'episode_id': episodeId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'success') {
+                    console.error('Failed to remove item from queue on server');
+                }
+            });
+        }
+
+        async function transcribeAll() {
+            console.log("transcribeAll function called");
+            const transcribeAllBtn = document.getElementById('transcribe-all-btn');
+            const spinner = transcribeAllBtn.querySelector('.spinner');
+            const buttonText = transcribeAllBtn.querySelector('span');
+
+            transcribeAllBtn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+            if (buttonText) buttonText.textContent = 'Transcribing...';
+
+            console.log("Queue length:", queue.length);
+            for (let item of queue) {
+                console.log("Processing item:", item);
+                if (item.status === 'pending' || item.status === 'error') {
+                    console.log(`Starting transcription for: ${item.podcast_name} - ${item.episode_title}`);
+                    try {
+                        await updateQueueItemStatus(item.episode_id, 'in-progress');
+                        updateQueueDisplay();
+                        console.log("Calling startTranscription");
+                        await startTranscription(item.audio_url, item.episode_id, item.podcast_name, item.episode_title, item.publication_date);
+                        console.log("startTranscription completed");
+                        await updateQueueItemStatus(item.episode_id, 'success');
+                        console.log(`Transcription completed for: ${item.podcast_name} - ${item.episode_title}`);
+                    } catch (error) {
+                        console.error('Transcription failed:', error);
+                        await updateQueueItemStatus(item.episode_id, 'error');
+                    }
+                    updateQueueDisplay();
+                } else {
+                    console.log(`Skipping item with status: ${item.status}`);
+                }
+            }
+
+            transcribeAllBtn.disabled = false;
+            if (spinner) spinner.style.display = 'none';
+            if (buttonText) buttonText.textContent = 'Transcribe';
+            console.log("All transcriptions completed");
+        }
+
+        async function updateQueueItemStatus(episodeId, status) {
+            const response = await fetch('{% url "update_queue_status" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'episode_id': episodeId,
+                    'status': status
+                })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                const item = queue.find(i => i.episode_id === episodeId);
+                if (item) {
+                    item.status = status;
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateQueueDisplay();
+            addLibraryItemListeners();
+            setupSearchFunctionality();
+            setupTranscribeAllButton();
+            setupExportTranscriptsButton();
+        });
+
+        function setupSearchFunctionality() {
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
+            const searchError = document.getElementById('search-error');
+
+            let debounceTimer;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const query = this.value.trim();
+                    console.log('Search input changed:', query);
+                    if (query.length > 2) {
+                        searchPodcasts(query);
+                    } else {
+                        clearSearchResults();
+                    }
+                }, 300);
+            });
+
+            document.addEventListener('click', handleClickOutsideSearch);
+
+            function handleClickOutsideSearch(event) {
+                if (!searchInput.contains(event.target) && !searchResults.contains(event.target)) {
+                    clearSearchResults();
+                }
+            }
+
+            function searchPodcasts(query) {
+                console.log('Searching for:', query);
+                
+                // Show loading indicator
+                searchResults.innerHTML = '<p>Searching...</p>';
+                searchResults.style.display = 'block';
+                searchError.style.display = 'none';
+
+                // Set a timeout for the fetch request
+                const timeoutDuration = 300000; // 5 minutes
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+
+                fetch(`/search-podcasts/?q=${encodeURIComponent(query)}`, {
+                    signal: controller.signal
+                })
+                    .then(response => {
+                        clearTimeout(timeoutId);
+                        console.log('Response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Search results:', data);
+                        if (data.podcasts && Array.isArray(data.podcasts)) {
+                            displaySearchResults(data.podcasts);
+                        } else {
+                            console.error('Unexpected data structure:', data);
+                            displaySearchResults([]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        if (error.name === 'AbortError') {
+                            handleSearchError('Search request timed out. Please try again.');
+                        } else {
+                            handleSearchError('An error occurred while searching. Please try again.');
+                        }
+                    });
+            }
+
+            function displaySearchResults(podcasts) {
+                searchResults.innerHTML = '';
+                searchError.style.display = 'none';
+                
+                if (podcasts.length === 0) {
+                    searchResults.innerHTML = '<p>No results found.</p>';
+                    return;
+                }
+
+                podcasts.forEach(podcast => {
+                    const escapedPodcastData = JSON.stringify(podcast)
+                        .replace(/&/g, '&amp;')
+                        .replace(/'/g, '&#39;')
+                        .replace(/"/g, '&quot;');
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <button class="add-to-library-btn" data-podcast="${escapedPodcastData}">+</button>
+                        <a href="#" data-podcast-id="${podcast.collectionId}" data-podcast-name="${podcast.collectionName.replace(/'/g, "\\'")}">
+                            <img src="${podcast.artworkUrl60}" alt="${podcast.collectionName.replace(/'/g, "\\'")}">
+                            <span>${podcast.collectionName.replace(/'/g, "\\'")}</span>
+                        </a>
+                    `;
+                    searchResults.appendChild(div);
+                });
+                searchResults.style.display = 'block';
+                addEventListenersToSearchResults();
+            }
+
+            function handleSearchError(message) {
+                searchResults.innerHTML = '';
+                searchError.textContent = message;
+                searchError.style.display = 'block';
+            }
+
+            function clearSearchResults() {
+                searchResults.innerHTML = '';
+                searchResults.style.display = 'none';
+                searchError.style.display = 'none';
+            }
+
+            function addEventListenersToSearchResults() {
+                const buttons = searchResults.querySelectorAll('.add-to-library-btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', handleAddToLibrary);
+                });
+
+                const podcastLinks = searchResults.querySelectorAll('a[data-podcast-id]');
+                podcastLinks.forEach(link => {
+                    link.addEventListener('click', handlePodcastClick);
+                });
+            }
+
+            function handleAddToLibrary(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const podcastDataString = this.getAttribute('data-podcast');
+                let podcastData;
+                try {
+                    podcastData = JSON.parse(podcastDataString);
+                } catch (error) {
+                    console.error('Error parsing podcast data:', error);
+                    alert('Error adding podcast to library. Please try again.');
+                    return;
+                }
+                addToLibrary(podcastData);
+            }
+
+            function handlePodcastClick(event) {
+                event.preventDefault();
+                const podcastId = this.getAttribute('data-podcast-id');
+                const podcastName = this.getAttribute('data-podcast-name');
+                loadPodcastEpisodes(podcastId, podcastName);
+            }
+        }
+
+        function setupTranscribeAllButton() {
+            const transcribeAllBtn = document.getElementById('transcribe-all-btn');
+            transcribeAllBtn.addEventListener('click', transcribeAll);
+        }
+
+        function setupExportTranscriptsButton() {
+            document.getElementById('export-transcripts-btn').addEventListener('click', exportTranscripts);
+        }
+
+        function exportTranscripts() {
+            fetch('{% url "export_transcripts" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Transcripts exported successfully!');
+                } else {
+                    alert('Error exporting transcripts: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while exporting transcripts.');
+            });
+        }
+
+        function addLibraryItemListeners() {
+            const libraryItems = document.querySelectorAll('.library-item');
+            libraryItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Prevent default action only if it's not the remove button
+                    if (!e.target.classList.contains('remove-from-library')) {
+                        e.preventDefault();
+                        const podcastId = this.getAttribute('data-podcast-id');
+                        const podcastName = this.querySelector('.library-item-content div:first-child').textContent;
+                        loadPodcastEpisodes(podcastId, podcastName);
+                    }
+                });
+            });
+        }
+
+        function addToLibrary(podcast) {
+            fetch('{% url "add_to_library" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'collection_id': podcast.collectionId,
+                    'name': podcast.collectionName,
+                    'artist': podcast.artistName,
+                    'artwork_url': podcast.artworkUrl100
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Podcast added to library!');
+                    updateLibraryList();
+                } else if (data.status === 'already_exists') {
+                    alert('This podcast is already in your library.');
+                } else {
+                    alert('Error adding podcast to library');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding podcast to library');
+            });
+        }
+
+        function updateLibraryList() {
+            fetch('{% url "get_library_items" %}')
+                .then(response => response.json())
+                .then(data => {
+                    const libraryList = document.getElementById('library-list');
+                    libraryList.innerHTML = '';
+                    data.library_items.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'library-item';
+                        div.setAttribute('data-podcast-id', item.collection_id);
+                        div.innerHTML = `
+                            <img src="${item.artwork_url}" alt="${item.name}">
+                            <div class="library-item-content">
+                                <div>${item.name}</div>
+                                <div class="episode-meta">${item.artist}</div>
+                            </div>
+                            <form method="post" action="{% url 'remove_from_library' item_id=0 %}".replace('0', item.collection_id)>
+                                {% csrf_token %}
+                                <button type="submit" class="remove-from-library" title="Remove from library">&times;</button>
+                            </form>
+                        `;
+                        libraryList.appendChild(div);
+                    });
+                    addLibraryItemListeners();
+                });
+        }
+
+        async function startTranscription(audioUrl, episodeId, podcastName, episodeTitle, publicationDate) {
+            console.log(`Starting transcription for: ${podcastName} - ${episodeTitle}`);
+            console.log("Request data:", { audioUrl, episodeId, podcastName, episodeTitle, publicationDate });
+            try {
+                const response = await fetch('/start_transcription/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: new URLSearchParams({
+                        'audio_url': audioUrl,
+                        'episode_id': episodeId,
+                        'podcast_name': podcastName,
+                        'episode_title': episodeTitle,
+                        'publication_date': publicationDate
+                    })
+                });
+
+                console.log("Response status:", response.status);
+                const responseData = await response.json();
+                console.log("Response data:", responseData);
+
+                if (!response.ok) {
+                    throw new Error(`Transcription failed to start: ${response.statusText}`);
+                }
+
+                return new Promise((resolve, reject) => {
+                    const eventSource = new EventSource(`/sse/${episodeId}/`);
+                    let transcriptionCompleted = false;
+
+                    eventSource.onmessage = function(event) {
+                        const data = JSON.parse(event.data);
+                        console.log('SSE message received:', data);
+                        if (data.type === 'transcription_complete' || data.type === 'error' || data.type === 'existing_transcript') {
+                            if (!transcriptionCompleted) {
+                                transcriptionCompleted = true;
+                                eventSource.close();
+                                if (data.type === 'transcription_complete' || data.type === 'existing_transcript') {
+                                    console.log(`Transcription completed for: ${podcastName} - ${episodeTitle}`);
+                                    resolve();
+                                } else {
+                                    console.error(`Transcription error: ${data.message}`);
+                                    reject(new Error(data.message));
+                                }
+                            }
+                        }
+                    };
+
+                    eventSource.onerror = function(error) {
+                        console.error('SSE error:', error);
+                        if (!transcriptionCompleted) {
+                            transcriptionCompleted = true;
+                            eventSource.close();
+                            reject(error);
+                        }
+                    };
+
+                    // Set a timeout to close the connection if it's taking too long
+                    setTimeout(() => {
+                        if (!transcriptionCompleted) {
+                            transcriptionCompleted = true;
+                            eventSource.close();
+                            reject(new Error('Transcription timed out'));
+                        }
+                    }, 6000000); // 10 minutes timeout
+                });
+            } catch (error) {
+                console.error('Error in startTranscription:', error);
+                throw error;
+            }
+        }
+
+        function loadPodcastEpisodes(podcastId, podcastName, page = 1) {
+            fetch(`/get_podcast_episodes/?podcast_id=${podcastId}&page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    const podcastTab = document.getElementById('podcast-tab');
+                    podcastTab.innerHTML = `
+                        <h2>Episodes for "${podcastName}"</h2>
+                        <div class="episode-list">
+                            ${data.episodes.map(episode => `
+                                <div class="episode-item" data-episode-id="${episode.trackId}">
+                                    <img src="${episode.artworkUrl60}" alt="${podcastName}">
+                                    <div class="episode-info">
+                                        <div class="episode-title">${episode.trackName}</div>
+                                        <div class="episode-meta">
+                                            ${new Date(episode.releaseDate).toLocaleDateString()} | ${episode.duration_minutes} min
+                                        </div>
+                                    </div>
+                                    <button class="add-to-queue-btn" onclick="addToQueue('${episode.trackId}', '${episode.trackName.replace(/'/g, "\\'")}', '${episode.previewUrl}', '${podcastName.replace(/'/g, "\\'")}', '${episode.releaseDate}')">Add</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="pagination">
+                            ${data.has_previous ? `<a href="#" onclick="loadPodcastEpisodes('${podcastId}', '${podcastName.replace(/'/g, "\\'")}', ${data.previous_page})">Previous</a>` : '<span class="disabled">Previous</span>'}
+                            <span class="current-page">Page ${data.current_page} of ${data.total_pages}</span>
+                            ${data.has_next ? `<a href="#" onclick="loadPodcastEpisodes('${podcastId}', '${podcastName.replace(/'/g, "\\'")}', ${data.next_page})">Next</a>` : '<span class="disabled">Next</span>'}
+                        </div>
+                    `;
+                    
+                    // Show podcast tab and make it active
+                    const podcastTabButton = document.querySelector('.tab[data-tab="podcast"]');
+                    podcastTabButton.style.display = 'block';
+                    podcastTabButton.textContent = podcastName;
+                    podcastTabButton.click();
+                });
+        }
+
+        // Add event listeners for tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(`${this.dataset.tab}-tab`).classList.add('active');
+            });
+        });
+
+    </script>
+</body>
+</html>
